@@ -657,24 +657,43 @@
   }
 
   function injectBackup(page) {
-    var sec = makeSection('Backup & restore',
-      'Your entries live only in this browser on this device. Export a backup file to protect your data if you clear browser storage, change phones, or move to a newer SMOOTH-OPS version.');
+    var sec = document.createElement('section');
+    sec.className = 'settings-section';
     sec.setAttribute('data-so-backup', 'true');
+
+    var h = document.createElement('h2');
+    h.className = 'section-heading';
+    h.textContent = 'Backup & restore';
+    sec.appendChild(h);
+
+    // Content wrapper: the section card is a horizontal flex row, so the
+    // text + buttons need their own column that takes the remaining width.
+    var body = document.createElement('div');
+    body.style.display = 'grid';
+    body.style.gap = '10px';
+    body.style.flex = '1 1 auto';
+    body.style.minWidth = '0';
+
+    var p = document.createElement('p');
+    p.className = 'settings-copy';
+    p.textContent = 'Your entries live only in this browser on this device. Export a backup file to protect your data if you clear browser storage, change phones, or move to a newer SMOOTH-OPS version.';
+    body.appendChild(p);
 
     var row = document.createElement('div');
     row.style.display = 'flex';
     row.style.gap = '10px';
     row.style.flexWrap = 'wrap';
-    row.style.marginTop = '10px';
 
     var exp = document.createElement('button');
     exp.type = 'button';
     exp.className = 'primary';
+    exp.style.flex = '1 1 auto';
     exp.textContent = 'Export backup';
 
     var res = document.createElement('button');
     res.type = 'button';
     res.className = 'secondary';
+    res.style.flex = '1 1 auto';
     res.textContent = 'Restore backup';
 
     var file = document.createElement('input');
@@ -686,7 +705,6 @@
 
     var status = document.createElement('p');
     status.className = 'settings-copy';
-    status.style.marginTop = '8px';
     status.setAttribute('role', 'status');
 
     exp.addEventListener('click', function () { exportBackup(status); });
@@ -698,9 +716,10 @@
 
     row.appendChild(exp);
     row.appendChild(res);
-    sec.appendChild(row);
-    sec.appendChild(file);
-    sec.appendChild(status);
+    body.appendChild(row);
+    body.appendChild(file);
+    body.appendChild(status);
+    sec.appendChild(body);
     page.appendChild(sec);
   }
 
