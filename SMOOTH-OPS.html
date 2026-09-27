@@ -568,6 +568,14 @@
 *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 </style>
+<style data-smoothops-tweaks>
+/* SMOOTH-OPS layout tweaks requested by Jason (2026-09-27). */
+/* Timecard view: move the Weekly records export below the log sections. */
+.records-column > .records-export{order:99}
+/* Tidier export card: even spacing, controls left-aligned in one neat row. */
+.records-export{display:grid;gap:12px}
+.records-export .export-controls{justify-content:flex-start;align-items:center}
+</style>
 <script data-smoothops-settings>
 /* SMOOTH-OPS settings enhancements (2026-09-27).
    - Backup & restore: one-tap versioned JSON export of the on-device
