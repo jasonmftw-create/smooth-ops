@@ -568,32 +568,160 @@
 *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 </style>
-<script data-smoothops-privacy>
-/* SMOOTH-OPS privacy note (2026-09-27).
-   Injects a short plain-language privacy section at the bottom of the
-   Settings page. All app data stays on-device; this only describes that. */
+<script data-smoothops-settings>
+/* SMOOTH-OPS settings enhancements (2026-09-27).
+   - Backup & restore: one-tap versioned JSON export of the on-device
+     database, plus file-based restore.
+   - Privacy note describing the on-device-only data model.
+   Injected into the Settings page; survives React re-renders via a
+   MutationObserver. All data stays on-device; nothing is sent anywhere. */
 (function () {
   'use strict';
-  var NOTE = 'Your SMOOTH-OPS data \u2014 stores, visits, timecards, notes and metrics \u2014 is saved only in this device\u2019s browser storage. Nothing is uploaded, synced or shared. There are no accounts, no cookies and no tracking. Use the backup export above to keep a copy of your data.';
-  function inject() {
-    // The settings view renders <section class="settings-page">; it only
-    // exists in the DOM while Settings is the active view.
-    var page = document.querySelector('.settings-page');
-    if (!page || page.querySelector('[data-so-privacy]')) return;
+  var DB_KEY = 'smoothops_db_v1';
+  var FORMAT = 'smooth-ops-backup';
+  var VERSION = 1;
+
+  var PRIVACY_NOTE = 'Your SMOOTH-OPS data \u2014 stores, visits, timecards, notes and metrics \u2014 is saved only in this device\u2019s browser storage. Nothing is uploaded, synced or shared. There are no accounts, no cookies and no tracking. Use the backup export above to keep a copy of your data.';
+
+  function readDb() {
+    try { return window.localStorage.getItem(DB_KEY); } catch (e) { return null; }
+  }
+
+  function download(name, text) {
+    var blob = new Blob([text], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  function todayStamp() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function exportBackup(status) {
+    try {
+      var raw = readDb();
+      var payload = {
+        format: FORMAT,
+        version: VERSION,
+        exportedAt: new Date().toISOString(),
+        data: raw ? JSON.parse(raw) : null
+      };
+      download('SMOOTH-OPS-backup-' + todayStamp() + '.json', JSON.stringify(payload, null, 2));
+      status.textContent = 'Backup exported. Keep the file somewhere safe.';
+    } catch (e) {
+      status.textContent = 'Could not export the backup. Please try again.';
+    }
+  }
+
+  function restoreBackup(file, status) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var x = JSON.parse(reader.result);
+        if (!x || x.format !== FORMAT || !x.data) throw new Error('not-backup');
+        if (Number(x.version) > VERSION) throw new Error('newer');
+        if (!x.data.seq || !Array.isArray(x.data.stores)) throw new Error('not-backup');
+        if (!window.confirm('Replace the data in this browser with this backup?')) return;
+        window.localStorage.setItem(DB_KEY, JSON.stringify(x.data));
+        window.location.reload();
+      } catch (e) {
+        status.textContent = (e && e.message === 'newer')
+          ? 'This backup was made by a newer version and can\u2019t be restored here.'
+          : 'That file isn\u2019t a SMOOTH-OPS backup.';
+      }
+    };
+    reader.onerror = function () {
+      status.textContent = 'Could not read that file. Please try again.';
+    };
+    reader.readAsText(file);
+  }
+
+  function makeSection(title, text) {
     var sec = document.createElement('section');
     sec.className = 'settings-section';
-    sec.setAttribute('data-so-privacy', 'true');
     var h = document.createElement('h2');
     h.className = 'section-heading';
-    h.textContent = 'Privacy';
+    h.textContent = title;
     var p = document.createElement('p');
     p.className = 'settings-copy';
-    p.textContent = NOTE;
+    p.textContent = text;
     sec.appendChild(h);
     sec.appendChild(p);
+    return sec;
+  }
+
+  function injectBackup(page) {
+    var sec = makeSection('Backup & restore',
+      'Your entries live only in this browser on this device. Export a backup file to protect your data if you clear browser storage, change phones, or move to a newer SMOOTH-OPS version.');
+    sec.setAttribute('data-so-backup', 'true');
+
+    var row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '10px';
+    row.style.flexWrap = 'wrap';
+    row.style.marginTop = '10px';
+
+    var exp = document.createElement('button');
+    exp.type = 'button';
+    exp.className = 'primary';
+    exp.textContent = 'Export backup';
+
+    var res = document.createElement('button');
+    res.type = 'button';
+    res.className = 'secondary';
+    res.textContent = 'Restore backup';
+
+    var file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'application/json,.json';
+    file.style.display = 'none';
+    file.setAttribute('aria-hidden', 'true');
+    file.tabIndex = -1;
+
+    var status = document.createElement('p');
+    status.className = 'settings-copy';
+    status.style.marginTop = '8px';
+    status.setAttribute('role', 'status');
+
+    exp.addEventListener('click', function () { exportBackup(status); });
+    res.addEventListener('click', function () { file.click(); });
+    file.addEventListener('change', function () {
+      if (file.files && file.files[0]) restoreBackup(file.files[0], status);
+      file.value = '';
+    });
+
+    row.appendChild(exp);
+    row.appendChild(res);
+    sec.appendChild(row);
+    sec.appendChild(file);
+    sec.appendChild(status);
     page.appendChild(sec);
   }
-  function kick() { try { inject(); } catch (e) {} }
+
+  function injectPrivacy(page) {
+    var sec = makeSection('Privacy', PRIVACY_NOTE);
+    sec.setAttribute('data-so-privacy', 'true');
+    page.appendChild(sec);
+  }
+
+  function inject() {
+    try {
+      // The settings view renders <section class="settings-page">; it only
+      // exists in the DOM while Settings is the active view.
+      var page = document.querySelector('.settings-page');
+      if (!page) return;
+      if (!page.querySelector('[data-so-backup]')) injectBackup(page);
+      if (!page.querySelector('[data-so-privacy]')) injectPrivacy(page);
+    } catch (e) {}
+  }
+
+  function kick() { inject(); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', kick);
   } else { kick(); }
