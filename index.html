@@ -575,12 +575,9 @@
 (function () {
   'use strict';
   var NOTE = 'Your SMOOTH-OPS data \u2014 stores, visits, timecards, notes and metrics \u2014 is saved only in this device\u2019s browser storage. Nothing is uploaded, synced or shared. There are no accounts, no cookies and no tracking. Use the backup export above to keep a copy of your data.';
-  function settingsActive() {
-    var btn = document.querySelector('.menu-links button[aria-current="page"]');
-    return !!btn && /settings/i.test(btn.textContent || '');
-  }
   function inject() {
-    if (!settingsActive()) return;
+    // The settings view renders <section class="settings-page">; it only
+    // exists in the DOM while Settings is the active view.
     var page = document.querySelector('.settings-page');
     if (!page || page.querySelector('[data-so-privacy]')) return;
     var sec = document.createElement('section');
