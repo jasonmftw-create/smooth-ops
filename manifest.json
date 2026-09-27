@@ -2,7 +2,7 @@
   "name": "SMOOTH-OPS",
   "short_name": "SMOOTH-OPS",
   "description": "SMOOTH-OPS district manager hub",
-  "start_url": "./SMOOTH-OPS.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
