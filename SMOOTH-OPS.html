@@ -576,6 +576,30 @@
 .records-export{display:grid;gap:12px}
 .records-export .export-controls{justify-content:flex-start;align-items:center}
 </style>
+<style data-smoothops-wide>
+/* SMOOTH-OPS wide-screen (foldable / Duo) layout — 2026-11-09.
+   Layout only, and only at wide widths: below 900px nothing in this
+   block applies, so the current slab (narrow phone) design is untouched.
+   At 900px+ the header and content columns widen past their 980px cap
+   and the dashboard cards and store list spread across, so the whole
+   district is visible at a glance instead of scrolling. */
+@media (min-width:900px){
+.topline{max-width:1360px}
+.content{width:min(1360px,100%)}
+.home-card-stack{grid-template-columns:repeat(3,minmax(0,1fr))}
+.home-work-group{grid-template-columns:repeat(3,minmax(0,1fr))}
+.store-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+}
+/* Foldable hinge: when the browser reports a vertical crease (two
+   horizontal viewport segments), run two-across with a wide center
+   gutter so cards keep clear of the fold. Browsers without segment
+   reporting simply use the rules above. */
+@media (min-width:900px) and (horizontal-viewport-segments:2){
+.home-card-stack{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:56px}
+.home-work-group{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:56px}
+.store-list{column-gap:56px}
+}
+</style>
 <script data-smoothops-settings>
 /* SMOOTH-OPS settings enhancements (2026-09-27).
    - Backup & restore: one-tap versioned JSON export of the on-device
